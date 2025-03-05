@@ -1,0 +1,17 @@
+h2 {
+    position: relative;
+}
+
+h2::before {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: bottom;
+    transform: rotateX(180deg);
+    line-height: 0.865em;
+    background: linear-gradient(0deg, #713cf4 0, transparent 80%);
+    background-clip: text;
+    color: transparent;
+    opacity: 0.4;
+}
