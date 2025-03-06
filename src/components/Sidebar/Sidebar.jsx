@@ -36,12 +36,12 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, chats, onNewChat }) => {
                 </button>
             </div>
 
-            <div className="mt-6 overflow-y-auto h-[calc(100%-4rem)] px-5">
+            <div className="mt-6 overflow-y-auto h-[calc(100%-4rem)] px-5 pb-5">
                 <p className="text-[#713cf4] font-semibold mb-3">Chat History</p>
                 <ul className='space-y-2'>
                     {chats.map((chat, idx) => (
                         <li key={idx} className="my-2">
-                            <button onClick={() => navigate(`/chat/${chat._id}`)} className="w-full btn btn-ghost rounded-2xl hover:bg-[#713cf4]/[0.1] text-black">
+                            <button onClick={() => {navigate(`/dashboard/chat/${chat._id}`, { state: {chatTitle: chat.title} }); toggleSidebar();}} className="w-full btn btn-ghost rounded-2xl hover:bg-[#713cf4]/[0.1] text-black inline-flex justify-start">
                                 {chat.title.length > 20 ? `${chat.title.substring(0, 20)}...` : chat.title}
                             </button>
                         </li>

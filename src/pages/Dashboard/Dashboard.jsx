@@ -27,7 +27,6 @@ const Dashboard = () => {
                     photoURL: userAuth.photoURL,
                     uid: userAuth.uid,
                 }));
-                navigate('/dashboard');
             } else {
                 dispatch(clearUser());
                 navigate('/');
@@ -49,7 +48,7 @@ const Dashboard = () => {
         axios.post('http://localhost:5000/chats', newChat)
             .then(response => {
                 setChats([...chats, newChat]);
-                navigate(`/chat/${response.data.insertedId}`);
+                navigate(`/dashboard/chat/${response.data.insertedId}`);
             });
     };
 
@@ -58,19 +57,17 @@ const Dashboard = () => {
     };
 
     const handleLogout = async () => {
-        await handleSignOut(); 
+        await handleSignOut();
         dispatch(clearUser());
         navigate('/');
     };
-
-    console.log(userInfo);
 
     if (loading) {
         return <LoadingPage></LoadingPage>
     }
 
     return (
-        <div className="w-full h-full min-h-screen">
+        <div className="w-full min-h-screen">
             {/* Sidebar */}
             <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} chats={chats} onNewChat={handleNewChat}></Sidebar>
 
@@ -81,7 +78,7 @@ const Dashboard = () => {
                 <Navbar userInfo={userInfo} handleLogout={handleLogout} toggleSidebar={toggleSidebar}></Navbar>
 
                 {/* Content Area */}
-                <div className="w-full h-full relative">
+                <div className="w-full flex-grow">
                     <section className="w-full h-full z-10">
                         <Outlet />
                     </section>

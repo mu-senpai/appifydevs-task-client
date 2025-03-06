@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import Login from "../pages/Login/Login";
 import Dashboard from "../pages/Dashboard/Dashboard";
+import ChatBox from "../pages/Dashboard/ChatBox";
 
 const router = createBrowserRouter([
     {
@@ -10,6 +11,12 @@ const router = createBrowserRouter([
     {
         path: "/dashboard",
         element: <Dashboard />,
+        children: [
+            {
+                path: "chat/:chatId",
+                element: <ChatBox />,
+            }
+        ]
     }
 ]);
 
