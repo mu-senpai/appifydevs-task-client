@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useOutletContext, useParams } from 'react-router-dom';
 
 const ChatBox = () => {
     const { userInfo } = useSelector((state) => state.user);
     const { chatId } = useParams();
-
+    const { refetch } = useOutletContext();
     const location = useLocation();
-    const { chatTitle } = location.state || {};
 
+    const [chatDetails, setChatDetails] = useState({});
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const [isTyping, setIsTyping] = useState(false);
@@ -20,7 +21,7 @@ const ChatBox = () => {
 
         const userMessage = { content: newMessage, role: 'user', timestamp: new Date() };
         setMessages((prevMessages) => [...prevMessages, userMessage]);
-        setNewMessage(""); // Clear the input field
+        setNewMessage("");
 
         setIsTyping(true);
 
@@ -41,21 +42,31 @@ const ChatBox = () => {
                     ...prevMessages,
                     { content: aiMessage, role: 'assistant', timestamp: new Date() },
                 ]);
+
                 // Store the user and assistant messages in the database (send them to your server)
-                await axios.post('http://localhost:5000/messages', {
+                await axios.post('https://echogpt-server.vercel.app/messages', {
                     chatId: chatId,
                     userId: userInfo.uid,
                     content: userMessage.content,
                     role: 'user',
                 });
 
-                await axios.post('http://localhost:5000/messages', {
+                await axios.post('https://echogpt-server.vercel.app/messages', {
                     chatId: chatId,
                     userId: userInfo.uid,
                     content: aiMessage,
                     role: 'assistant',
                 });
+
+                if (messages.length === 0) {
+                    await axios.patch(`https://echogpt-server.vercel.app/chats/${chatId}`, {
+                        title: newMessage,
+                    });
+                    setChatDetails((prevDetails) => ({ ...prevDetails, title: newMessage }));
+                    refetch();
+                }
             }
+            scrollToBottom();
 
         } catch (error) {
             console.error('Error communicating with EchoGPT:', error);
@@ -66,7 +77,7 @@ const ChatBox = () => {
 
     const fetchEchoGPTResponse = async (messages) => {
 
-        const messagesPayload = messages.length > 0 ? [...messages].reverse() : [{ role: 'system', content: "Explain the contents like you're an helpful assistant." }, ...[...messages].reverse()];
+        const messagesPayload = messages.length > 0 ? [...messages].reverse() : [{ role: 'system', content: "Explain the contents like you're an helpful assistant." }, ...messages];
 
         try {
             const response = await axios.post('https://api.echogpt.live/v1/chat/completions', {
@@ -83,24 +94,54 @@ const ChatBox = () => {
         }
     };
 
+    const scrollToBottom = () => {
+        window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: 'smooth',
+        });
+    };
+
+    const handleKeyDown = async (event) => {
+        if (event.key === "Enter") {
+            await handleSend();
+        }
+    };
+
     useEffect(() => {
         if (chatId) {
+            const fetchChatData = async () => {
+                try {
+                    const result = await axios.get(`https://echogpt-server.vercel.app/chatdetails/${chatId}`);
+                    setChatDetails(result.data);
+                } catch (error) {
+                    console.error('Error fetching chat data:', error);
+                }
+            };
+
             const fetchMessages = async () => {
                 try {
-                    const result = await axios.get(`http://localhost:5000/messages/${chatId}`);
+                    const result = await axios.get(`https://echogpt-server.vercel.app/messages/${chatId}`);
                     setMessages(result.data);
                 } catch (error) {
                     console.error('Error fetching messages:', error);
                 }
             };
+
+            fetchChatData();
             fetchMessages();
         }
     }, [chatId]);
 
     return (
-        <div className="flex flex-col h-full relative">
+        <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col h-full relative">
             <div className="flex-grow mb-4 overflow-y-auto pt-6 md:pt-10 px-6 md:px-10 pb-24">
-                <h3 className='text-2xl text-gray-500 font-semibold mb-8'>{'Chat > ' + chatTitle}</h3>
+                <h3 className='text-2xl text-gray-500 font-semibold mb-8'>{'Chat > ' + chatDetails?.title}</h3>
                 {messages.map((msg, index) => (
                     <div key={index} className={`mb-4 ${msg.role === 'user' ? 'text-right' : ''}`}>
                         <div className={`inline-block p-3 rounded-lg max-w-xs overflow-auto text-wrap ${msg.role === 'user' ? 'bg-[#713cf4] text-white' : 'bg-gray-200 text-black'}`}>
@@ -118,18 +159,19 @@ const ChatBox = () => {
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="Type a message..."
-                        className="w-full lg:w-[calc(100%-21.5rem)] join-item p-3 rounded-l-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full lg:w-[calc(100%-21.5rem)] join-item p-3 rounded-l-lg bg-white border border-gray-300 focus:outline-none"
                     />
                     <button
                         onClick={handleSend}
-                        className="p-3 join-item bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="btn p-3 join-item bg-[#713cf4] hover:bg-[#713cf4] text-white rounded-r-lg focus:outline-none"
                     >
                         Send
                     </button>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
